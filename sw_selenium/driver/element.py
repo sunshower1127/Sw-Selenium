@@ -1,11 +1,35 @@
-class Element(WebElement, Findable):
+"""
+element
+"""
+
+from typing import TYPE_CHECKING, Literal
+
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.support.select import Select
+
+from .finder.findable import Findable
+
+if TYPE_CHECKING:
+    from .chrome import SwChrome
+
+
+class SwElement(WebElement, Findable):
+    """
+    SwElement
+    """
+
     def __init__(self, element: WebElement):
         super().__init__(element.parent, element.id)
         self._driver: SwChrome = super().parent
 
     def up(self, levels=1):
         xpath = "/".join([".."] * levels)
-        return Element(self._driver._retry(lambda: self.find_element(By.XPATH, xpath)))
+        return SwElement(
+            self._driver._retry(lambda: self.find_element(By.XPATH, xpath))
+        )
 
     def move_mouse(self, offset_x=0, offset_y=0):
         ActionChains(self._parent).move_to_element_with_offset(

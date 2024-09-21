@@ -5,9 +5,15 @@ if TYPE_CHECKING:
 
 
 class NoException:
-    def __init__(self, driver: SwChrome):
+    """
+    Context manager to suppress exceptions
+    """
+
+    def __init__(self, driver: SwChrome, include, exclude):
         self.driver = driver
         self.debug = self.driver.debug
+        self.include = include
+        self.exclude = exclude
 
     def __enter__(self):
         if self.debug:
@@ -17,6 +23,20 @@ class NoException:
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.debug:
             self.driver.debug = True
+
+        # If no exception occurred, return False to indicate normal exit
+        if exc_type is None:
+            return False
+
+        # If include is specified, suppress only those exceptions
+        if self.include and not issubclass(exc_type, self.include):
+            return False
+
+        # If exclude is specified, do not suppress those exceptions
+        if self.exclude and issubclass(exc_type, self.exclude):
+            return False
+
+        # Suppress the exception
         return True
 
 

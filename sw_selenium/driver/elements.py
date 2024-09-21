@@ -1,5 +1,16 @@
-class Elements:
-    def __init__(self, elements: list[Element]):
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Literal
+
+from ..parser.xpath_parser import generate_xpath
+from .element import SwElement
+
+if TYPE_CHECKING:
+    from .finder.findable import axis_str, expr_str
+
+
+class SwElements:
+    def __init__(self, elements: list[SwElement]):
         self._elements = elements
         self._index = 0
         self.texts = [element.text for element in self._elements]
@@ -23,7 +34,7 @@ class Elements:
         return bool(self._elements)
 
     def up(self, levels=1):
-        return Elements([element.up(levels) for element in self._elements])
+        return SwElements([element.up(levels) for element in self._elements])
 
     def find(
         self,
@@ -40,9 +51,9 @@ class Elements:
         text_contains: expr_str | None = None,
         **kwargs: expr_str,
     ):
-        xpath = xpath or get_xpath(locals())
+        xpath = xpath or generate_xpath(**locals())
 
-        return Elements([element.find(xpath) for element in self._elements])
+        return SwElements([element.find(xpath) for element in self._elements])
 
     def find_or_none(
         self,
@@ -59,34 +70,17 @@ class Elements:
         text_contains: expr_str | None = None,
         **kwargs: expr_str,
     ):
-        xpath = xpath or get_xpath(locals())
+        xpath = xpath or generate_xpath(**locals())
 
-        result: list[Element] = []
+        result: list[SwElement] = []
         for element in self._elements:
             if (e := element.find_or_none(xpath)) is not None:
                 result.append(e)
-        return Elements(result)
+        return SwElements(result)
 
-    def click(self, by: Literal["default", "enter", "js", "mouse"] = "default"):
-        match by:
-            case "default":
-                for element in self._elements:
-                    element.click()
-
-            case "enter":
-                for element in self._elements:
-                    element.send_keys(Keys.ENTER)
-
-            case "js":
-                self._elements[0]._driver.execute_script(
-                    "arguments.forEach(e => e.click());", *self._elements
-                )
-
-            case "mouse":
-                actions = ActionChains(self._elements[0]._driver)
-                for element in self._elements:
-                    actions.click(element)
-                actions.perform()
+    def click(self, by: Literal["enter", "js", "mouse"] = "enter"):
+        for element in self._elements:
+            element.click(by)
 
     def send_keys(self, keys: str | list[str]):
         if isinstance(keys, str):
@@ -97,7 +91,7 @@ class Elements:
             for element, key in zip(self._elements, keys):
                 element.send_keys(key)
 
-    def attributes(
+    def get_attributes(
         self,
         name: str,
     ):

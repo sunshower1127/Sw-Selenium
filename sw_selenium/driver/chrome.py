@@ -12,12 +12,18 @@ import os
 import threading
 import time
 from datetime import datetime
-from typing import Callable
+from typing import Callable, Iterable
 
 import keyboard
-from selenium.common.exceptions import WebDriverException
+from selenium.common.exceptions import NoSuchWindowException, WebDriverException
 from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.common.action_chains import ActionChains
+
+from ..parser.dateutil_parser import convert_date_string
+from .context_manager import NoException, RetryConfig
+from .element import SwElement
+from .finder.context_finder import ContextFinder
+from .finder.findable import Findable
 
 
 class SwChrome(Chrome, Findable):
@@ -73,25 +79,34 @@ class SwChrome(Chrome, Findable):
             options.add_argument("--disable-infobars")
 
         super().__init__(options=options)
+
+        if prevent_sleep:
+            self._caffeinate()
+
         # selenium의 implicitly_wait와 explicit_wait는 빠르게 동작하지 않음.
         # 따라서, try-except-pass로 구현된 _repeat 메서드를 사용하여 대체함.
         self.implicitly_wait(0)
         self._driver = self
-        self._debugfinder = DebugFinder(self)
+        self._context_finder = ContextFinder(self)
         self._timeout = timeout
         self._freq = freq
-
-        if prevent_sleep:
-            self._caffeinate()
 
     def __del__(self):
         if self.debug:
             self.quit()
 
-    def no_exc(self):
+    def no_exc(
+        self,
+        include: Iterable[type[Exception]] = (WebDriverException,),
+        exclude: Iterable[type[Exception]] = (),
+    ):
         """
         코드 실행 중 발생하는 모든 예외를 무시합니다.
         도중에 예외가 발생하면 with 구문을 빠져나옵니다.
+
+        Args:
+            include (Iterable[type[Exception]], optional): 무시할 예외의 리스트. 기본값은 (WebDriverException, ).
+            exclude (Iterable[type[Exception]], optional): 무시하지 않을 예외의 리스트. 기본값은 ().
 
         Returns:
             NoException: 예외 무시 객체. -> with 구문으로 사용
@@ -106,7 +121,7 @@ class SwChrome(Chrome, Findable):
             ```
 
         """
-        return NoException(self)
+        return NoException(self, include, exclude)
 
     def set_retry(self, timeout: float | None = None, freq: float | None = None):
         """
@@ -174,20 +189,30 @@ class SwChrome(Chrome, Findable):
 
         """
         if isinstance(dur, str):
-            dur = (
-                parse_date(dur, korean_year=korean_year) - datetime.today()
-            ).total_seconds()
+            # convert_date_string 함수로 받은 datetime 값
+            converted_datetime = convert_date_string(dur, korean_year=korean_year)
+
+            # 현재 날짜와 시간
+            now = datetime.now()
+
+            # 날짜 부분을 제거하고 시간 부분만 추출
+            time_difference = datetime.combine(
+                now.date(), converted_datetime.time()
+            ) - datetime.combine(now.date(), now.time())
+
+            # 시간 부분을 초로 변환
+            dur = time_difference.total_seconds()
         elif isinstance(dur, tuple):
             dur = abs(
                 (
-                    parse_date(dur[1], korean_year=korean_year)
-                    - parse_date(dur[0], korean_year=korean_year)
+                    convert_date_string(dur[1], korean_year=korean_year)
+                    - convert_date_string(dur[0], korean_year=korean_year)
                 ).total_seconds()
             )
 
         if until:
             dur = (
-                parse_date(until, korean_year=korean_year) - datetime.now()
+                convert_date_string(until, korean_year=korean_year) - datetime.now()
             ).total_seconds()
 
         if not isinstance(dur, float):
@@ -377,7 +402,7 @@ class SwChrome(Chrome, Findable):
             focused_element.click()  # 포커스된 요소 클릭
             ```
         """
-        return self._retry(lambda: Element(self.switch_to.active_element))
+        return self._retry(lambda: SwElement(self.switch_to.active_element))
 
     def _retry(self, func: Callable):
         """

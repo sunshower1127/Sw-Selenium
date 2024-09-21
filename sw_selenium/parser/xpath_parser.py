@@ -103,7 +103,7 @@ def _convert_to_logical_expression(element: str | list, prop_format: str) -> str
     return prop_format.format(element)
 
 
-def generate_xpath(**kwargs: dict):
+def generate_xpath(**kwargs):
     """
     Generate an XPath expression from the given keyword arguments.
     """

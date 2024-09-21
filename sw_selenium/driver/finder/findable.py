@@ -1,17 +1,22 @@
+"""
+Findable Interface
+
+"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Literal
 
-from enhanced_selenium._utils.xpath_parser import get_xpath
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
-from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.remote.webelement import WebElement
-from selenium.webdriver.support.ui import Select
+from sw_selenium.parser import generate_xpath
 
 if TYPE_CHECKING:
-    from .driver import SwChrome
+    from selenium.webdriver.remote.webelement import WebElement
+
+    from ...driver import SwChrome
+    from ..element import SwElement
+    from ..elements import SwElements
 
 axis_str = Literal[
     "ancestor",
@@ -25,13 +30,24 @@ axis_str = Literal[
     "preceding",
     "preceding-sibling",
 ]
+"""
+axis_str 타입 설명
 
+"""
 
 expr_str = str
+"""
+expr_str 타입 설명
+
+"""
 
 
-# Interface for find, find_all
 class Findable:
+    """
+    Interface for find, find_all
+
+    """
+
     # From other classes
     _driver: SwChrome
     find_element: Callable[[str, str], WebElement]
@@ -53,20 +69,24 @@ class Findable:
         text_contains: expr_str | None = None,
         **kwargs: expr_str,
     ):
-        xpath = xpath or get_xpath(locals())
-        print(f"LOG: find: {xpath=}")
+        """
+        find
+
+        """
+        xpath = xpath or generate_xpath(**locals())
+        if self._driver.debug:
+            print(f"LOG: find: {xpath=}")
         try:
-            return Element(
+            return SwElement(
                 self._driver._retry(lambda: self.find_element(By.XPATH, xpath))
             )
-        except TimeoutException as e:
+        except NoSuchElementException:
             if self._driver.debug:
-                self._driver._debugfinder.find(xpath)
-                return Element(
-                    self._driver._retry(lambda: self.find_element(By.XPATH, xpath))
-                )
-            msg = f"\n**Element not found**\n{xpath=}\n"
-            raise TimeoutException(msg) from None
+                self._driver._context_finder.search(xpath)
+                return SwElement(self.find_element(By.XPATH, xpath))
+            else:
+                msg = f"\n**Element not found**\n{xpath=}\n"
+                raise NoSuchElementException(msg) from None
 
     def find_or_none(
         self,
@@ -84,11 +104,15 @@ class Findable:
         text_contains: expr_str | None = None,
         **kwargs: expr_str,
     ):
-        xpath = xpath or get_xpath(locals())
+        """
+        find or none
+        """
+
+        xpath = xpath or generate_xpath(**locals())
 
         try:
-            return Element(self.find_element(By.XPATH, xpath))
-        except (TimeoutException, NoSuchElementException):
+            return SwElement(self.find_element(By.XPATH, xpath))
+        except NoSuchElementException:
             return None
 
     def find_all(
@@ -107,10 +131,14 @@ class Findable:
         text_contains: expr_str | None = None,
         **kwargs: expr_str,
     ):
-        xpath = xpath or get_xpath(locals())
+        """
+        find all
+        """
+
+        xpath = xpath or generate_xpath(**locals())
 
         self.find(xpath)
-        return Elements([Element(e) for e in self.find_elements(By.XPATH, xpath)])
+        return SwElements([SwElement(e) for e in self.find_elements(By.XPATH, xpath)])
 
     def find_all_or_none(
         self,
@@ -128,6 +156,10 @@ class Findable:
         text_contains: expr_str | None = None,
         **kwargs: expr_str,
     ):
-        xpath = xpath or get_xpath(locals())
+        """
+        find all or none
+        """
 
-        return Elements([Element(e) for e in self.find_elements(By.XPATH, xpath)])
+        xpath = xpath or generate_xpath(**locals())
+
+        return SwElements([SwElement(e) for e in self.find_elements(By.XPATH, xpath)])
