@@ -7,16 +7,20 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Literal
 
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from lazy_import import lazy_module
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from sw_selenium.parser import generate_xpath
 
+from ..elements import SwElements
+
 if TYPE_CHECKING:
+    import sw_selenium.driver.element as sw_element
     from selenium.webdriver.remote.webelement import WebElement
 
     from ...driver import SwChrome
-    from ..element import SwElement
-    from ..elements import SwElements
+else:
+    sw_element = lazy_module("sw_selenium.driver.element")
 
 axis_str = Literal[
     "ancestor",
@@ -48,10 +52,10 @@ class Findable:
 
     """
 
-    # From other classes
-    _driver: SwChrome
-    find_element: Callable[[str, str], WebElement]
-    find_elements: Callable[[str, str], list[WebElement]]
+    if TYPE_CHECKING:
+        _driver: SwChrome
+        find_element: Callable[[str, str], WebElement]
+        find_elements: Callable[[str, str], list[WebElement]]
 
     def find(
         self,
@@ -77,13 +81,13 @@ class Findable:
         if self._driver.debug:
             print(f"LOG: find: {xpath=}")
         try:
-            return SwElement(
+            return sw_element.SwElement(
                 self._driver._retry(lambda: self.find_element(By.XPATH, xpath))
             )
         except NoSuchElementException:
             if self._driver.debug:
                 self._driver._context_finder.search(xpath)
-                return SwElement(self.find_element(By.XPATH, xpath))
+                return sw_element.SwElement(self.find_element(By.XPATH, xpath))
             else:
                 msg = f"\n**Element not found**\n{xpath=}\n"
                 raise NoSuchElementException(msg) from None
@@ -111,7 +115,7 @@ class Findable:
         xpath = xpath or generate_xpath(**locals())
 
         try:
-            return SwElement(self.find_element(By.XPATH, xpath))
+            return sw_element.SwElement(self.find_element(By.XPATH, xpath))
         except NoSuchElementException:
             return None
 
@@ -138,7 +142,9 @@ class Findable:
         xpath = xpath or generate_xpath(**locals())
 
         self.find(xpath)
-        return SwElements([SwElement(e) for e in self.find_elements(By.XPATH, xpath)])
+        return SwElements(
+            [sw_element.SwElement(e) for e in self.find_elements(By.XPATH, xpath)]
+        )
 
     def find_all_or_none(
         self,
@@ -162,4 +168,6 @@ class Findable:
 
         xpath = xpath or generate_xpath(**locals())
 
-        return SwElements([SwElement(e) for e in self.find_elements(By.XPATH, xpath)])
+        return SwElements(
+            [sw_element.SwElement(e) for e in self.find_elements(By.XPATH, xpath)]
+        )

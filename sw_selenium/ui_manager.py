@@ -6,10 +6,19 @@ tkinter
 
 from __future__ import annotations
 
-import tkinter as tk
 from pathlib import Path
-from tkinter import simpledialog
-from typing import Callable, Literal, TypeVar
+from typing import TYPE_CHECKING, Callable, Literal, TypeVar
+
+from lazy_import import lazy_module
+
+tk = lazy_module("tkinter")
+
+if TYPE_CHECKING:
+    import tkinter as tk
+    from tkinter import simpledialog
+else:
+    tk = lazy_module("tkinter")
+    simpledialog = lazy_module("tkinter.simpledialog")
 
 T = TypeVar("T", str, int, float)
 

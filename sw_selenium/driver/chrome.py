@@ -12,9 +12,9 @@ import os
 import threading
 import time
 from datetime import datetime
-from typing import Callable, Iterable
+from typing import TYPE_CHECKING, Callable, Iterable
 
-import keyboard
+from lazy_import import lazy_module
 from selenium.common.exceptions import NoSuchWindowException, WebDriverException
 from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.common.action_chains import ActionChains
@@ -24,6 +24,11 @@ from .context_manager import NoException, RetryConfig
 from .element import SwElement
 from .finder.context_finder import ContextFinder
 from .finder.findable import Findable
+
+if TYPE_CHECKING:
+    import keyboard
+else:
+    keyboard = lazy_module("keyboard")
 
 
 class SwChrome(Chrome, Findable):
@@ -149,8 +154,8 @@ class SwChrome(Chrome, Findable):
 
     def wait(
         self,
-        *,
         dur: float | str | tuple[str, str] | None = None,
+        *,
         until: str | None = None,
         korean_year=False,
     ):
@@ -215,10 +220,6 @@ class SwChrome(Chrome, Findable):
                 convert_date_string(until, korean_year=korean_year) - datetime.now()
             ).total_seconds()
 
-        if not isinstance(dur, float):
-            msg = "Invalid argument"
-            raise ValueError(msg)
-
         if self.debug:
             print("\n**ES_DEBUGGER: wait for", dur, "seconds")
 
@@ -232,7 +233,8 @@ class SwChrome(Chrome, Findable):
                 target=print_remaining_time, args=[dur], daemon=True
             ).start()
 
-        time.sleep(dur)
+        if dur:
+            time.sleep(dur)
 
     def add_hotkey(self, key: str, callback: Callable):
         """

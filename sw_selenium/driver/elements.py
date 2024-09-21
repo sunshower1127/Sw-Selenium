@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Literal
 
 from ..parser.xpath_parser import generate_xpath
-from .element import SwElement
 
 if TYPE_CHECKING:
+    from .element import SwElement
     from .finder.findable import axis_str, expr_str
 
 

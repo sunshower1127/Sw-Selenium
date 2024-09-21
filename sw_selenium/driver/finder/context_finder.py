@@ -7,14 +7,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from selenium.common.exceptions import NoSuchElementException
-
 if TYPE_CHECKING:
     from .. import SwChrome
 
-    window_index = int
-    frame_path = str
-    context = tuple[window_index, frame_path]
+from selenium.common.exceptions import NoSuchElementException
+
+window_index = int
+frame_path = str
+context = tuple[window_index, frame_path]
 
 
 class ContextFinder:
@@ -59,11 +59,15 @@ class ContextFinder:
         if user_input == "n":
             raise NoSuchElementException
 
+        print()
         user_input = int(user_input)
         window_i, frame_path = self.contexts[user_input - 1]
         if window_i != self.cur_window_i:
             self.driver.goto_window(window_i)
+            print(f"self.driver.goto_window({window_i})")
+
         self.driver.goto_frame(frame_path)
+        print(f'self.driver.goto_frame("{frame_path}")')
 
     def _search(self):
         with self.driver.no_exc(), self.driver.set_retry(1, 0.1):
@@ -86,7 +90,7 @@ class ContextFinder:
 
         # find iframe
         try:
-            frame_ids = self.driver.find_all(tag="iframe").attributes("id")
+            frame_ids = self.driver.find_all(tag="iframe").get_attributes("id")
             for frame_id in frame_ids:
                 # 이게 None일 수가 있나?
                 if frame_id is None:

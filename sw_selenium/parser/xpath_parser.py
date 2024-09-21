@@ -113,12 +113,14 @@ def generate_xpath(**kwargs):
             data[key] = value
         del data["kwargs"]
 
+    data.pop("self")
+    data.pop("xpath")
+
     header = data.pop("axis", "descendant") + "::" + data.pop("tag", "*")
     body = []
     for key, value in data.items():
         if value is None:
             continue
-
         body.append(_parse_expression(value, key))
 
     if body:

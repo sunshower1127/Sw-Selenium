@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .chrome import SwChrome
+    from sw_selenium.driver import SwChrome
 
 
 class NoException:

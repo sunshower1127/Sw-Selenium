@@ -2,6 +2,8 @@
 element
 """
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Literal
 
 from selenium.webdriver.common.action_chains import ActionChains

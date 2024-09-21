@@ -8,9 +8,18 @@ pytesseract -> 추가 설치 필요
 
 from __future__ import annotations
 
-import cv2 as cv
-import numpy as np
-from pytesseract import image_to_string
+from typing import TYPE_CHECKING
+
+from lazy_import import lazy_function, lazy_module
+
+if TYPE_CHECKING:
+    import cv2 as cv
+    import numpy as np
+    from pytesseract import image_to_string
+else:
+    cv = lazy_module("cv2", {"import_name": "opencv-python"})
+    np = lazy_module("numpy")
+    image_to_string = lazy_function("pytesseract.image_to_string")
 
 
 def decipher_captcha(captcha_img: bytes) -> str:
