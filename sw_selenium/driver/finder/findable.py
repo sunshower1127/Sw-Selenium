@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 else:
     sw_element = lazy_module("sw_selenium.driver.element")
 
-axis_str = Literal[
+AxisStr = Literal[
     "ancestor",
     "ancestor-or-self",
     "child",
@@ -39,7 +39,7 @@ axis_str 타입 설명
 
 """
 
-expr_str = str
+ExprStr = str
 """
 expr_str 타입 설명
 
@@ -62,16 +62,16 @@ class Findable:
         xpath="",
         /,
         *,
-        axis: axis_str = "descendant",
+        axis: AxisStr = "descendant",
         tag="*",
-        id: expr_str | None = None,
-        id_contains: expr_str | None = None,
-        name: expr_str | None = None,
-        class_name: expr_str | None = None,
-        class_name_contains: expr_str | None = None,
-        text: expr_str | None = None,
-        text_contains: expr_str | None = None,
-        **kwargs: expr_str,
+        id: ExprStr | None = None,
+        id_contains: ExprStr | None = None,
+        name: ExprStr | None = None,
+        class_name: ExprStr | None = None,
+        class_name_contains: ExprStr | None = None,
+        text: ExprStr | None = None,
+        text_contains: ExprStr | None = None,
+        **kwargs: ExprStr,
     ):
         """
         find
@@ -97,16 +97,16 @@ class Findable:
         xpath="",
         /,
         *,
-        axis: axis_str = "descendant",
+        axis: AxisStr = "descendant",
         tag="*",
-        id: expr_str | None = None,
-        id_contains: expr_str | None = None,
-        name: expr_str | None = None,
-        class_name: expr_str | None = None,
-        class_name_contains: expr_str | None = None,
-        text: expr_str | None = None,
-        text_contains: expr_str | None = None,
-        **kwargs: expr_str,
+        id: ExprStr | None = None,
+        id_contains: ExprStr | None = None,
+        name: ExprStr | None = None,
+        class_name: ExprStr | None = None,
+        class_name_contains: ExprStr | None = None,
+        text: ExprStr | None = None,
+        text_contains: ExprStr | None = None,
+        **kwargs: ExprStr,
     ):
         """
         find or none
@@ -124,16 +124,16 @@ class Findable:
         xpath="",
         /,
         *,
-        axis: axis_str = "descendant",
+        axis: AxisStr = "descendant",
         tag="*",
-        id: expr_str | None = None,
-        id_contains: expr_str | None = None,
-        name: expr_str | None = None,
-        class_name: expr_str | None = None,
-        class_name_contains: expr_str | None = None,
-        text: expr_str | None = None,
-        text_contains: expr_str | None = None,
-        **kwargs: expr_str,
+        id: ExprStr | None = None,
+        id_contains: ExprStr | None = None,
+        name: ExprStr | None = None,
+        class_name: ExprStr | None = None,
+        class_name_contains: ExprStr | None = None,
+        text: ExprStr | None = None,
+        text_contains: ExprStr | None = None,
+        **kwargs: ExprStr,
     ):
         """
         find all
@@ -151,16 +151,16 @@ class Findable:
         xpath="",
         /,
         *,
-        axis: axis_str = "descendant",
+        axis: AxisStr = "descendant",
         tag="*",
-        id: expr_str | None = None,
-        id_contains: expr_str | None = None,
-        name: expr_str | None = None,
-        class_name: expr_str | None = None,
-        class_name_contains: expr_str | None = None,
-        text: expr_str | None = None,
-        text_contains: expr_str | None = None,
-        **kwargs: expr_str,
+        id: ExprStr | None = None,
+        id_contains: ExprStr | None = None,
+        name: ExprStr | None = None,
+        class_name: ExprStr | None = None,
+        class_name_contains: ExprStr | None = None,
+        text: ExprStr | None = None,
+        text_contains: ExprStr | None = None,
+        **kwargs: ExprStr,
     ):
         """
         find all or none

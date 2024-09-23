@@ -6,7 +6,7 @@ from ..parser.xpath_parser import generate_xpath
 
 if TYPE_CHECKING:
     from .element import SwElement
-    from .finder.findable import axis_str, expr_str
+    from .finder.findable import AxisStr, ExprStr
 
 
 class SwElements:
@@ -40,16 +40,16 @@ class SwElements:
         self,
         xpath="",
         *,
-        axis: axis_str = "descendant",
+        axis: AxisStr = "descendant",
         tag="*",
-        id: expr_str | None = None,
-        id_contains: expr_str | None = None,
-        name: expr_str | None = None,
-        class_name: expr_str | None = None,
-        class_name_contains: expr_str | None = None,
-        text: expr_str | None = None,
-        text_contains: expr_str | None = None,
-        **kwargs: expr_str,
+        id: ExprStr | None = None,
+        id_contains: ExprStr | None = None,
+        name: ExprStr | None = None,
+        class_name: ExprStr | None = None,
+        class_name_contains: ExprStr | None = None,
+        text: ExprStr | None = None,
+        text_contains: ExprStr | None = None,
+        **kwargs: ExprStr,
     ):
         xpath = xpath or generate_xpath(**locals())
 
@@ -59,16 +59,16 @@ class SwElements:
         self,
         xpath="",
         *,
-        axis: axis_str = "descendant",
+        axis: AxisStr = "descendant",
         tag="*",
-        id: expr_str | None = None,
-        id_contains: expr_str | None = None,
-        name: expr_str | None = None,
-        class_name: expr_str | None = None,
-        class_name_contains: expr_str | None = None,
-        text: expr_str | None = None,
-        text_contains: expr_str | None = None,
-        **kwargs: expr_str,
+        id: ExprStr | None = None,
+        id_contains: ExprStr | None = None,
+        name: ExprStr | None = None,
+        class_name: ExprStr | None = None,
+        class_name_contains: ExprStr | None = None,
+        text: ExprStr | None = None,
+        text_contains: ExprStr | None = None,
+        **kwargs: ExprStr,
     ):
         xpath = xpath or generate_xpath(**locals())
 

@@ -12,8 +12,9 @@ import os
 import threading
 import time
 from datetime import datetime
-from typing import TYPE_CHECKING, Callable, Iterable
+from typing import TYPE_CHECKING, Callable, Iterable, Literal
 
+import urllib3
 from lazy_import import lazy_module
 from selenium.common.exceptions import NoSuchWindowException, WebDriverException
 from selenium.webdriver import Chrome, ChromeOptions
@@ -31,19 +32,38 @@ else:
     keyboard = lazy_module("keyboard")
 
 
+# 이게 대체 뭔지 모르겠음
+# Warning이 뜨니깐...
+urllib3.PoolManager(num_pools=10, maxsize=10, block=True)
+
+SwOption = Literal[
+    "keep_browser_open",
+    "mute_audio",
+    "maximize",
+    "headless",
+    "disable_popup",
+    "prevent_sleep",
+    "disable_info_bar",
+]
+ChromeOptionArg = str
+"""
+ChromeOptions().add_argument() 메서드의 인자 타입
+예)
+"--mute-audio"
+"""
+ChromeExperimentalOption = str
+"""
+ChromeOptions().add_experimental_option(key, value) 메서드의 인자 타입
+"""
+
+
 class SwChrome(Chrome, Findable):
     def __init__(
         self,
-        *,
+        *args: SwOption | ChromeOptionArg,
         timeout=5.0,
         freq=0.5,
-        keep_browser_open=True,
-        audio=False,
-        maximize=True,
-        headless=False,
-        popup=True,
-        prevent_sleep=False,
-        info_bar=True,
+        **kwargs: ChromeExperimentalOption,
     ):
         """
         SwChrome 클래스의 초기화 메서드.
@@ -68,20 +88,37 @@ class SwChrome(Chrome, Findable):
             ```
 
         """
+
         self.debug = os.environ.get("ES_DEBUG") == "1"
         options = ChromeOptions()
+
+        prevent_sleep = False
+        keep_browser_open = False
+
+        for option in args:
+            match option:
+                case "mute_audio":
+                    options.add_argument("--mute-audio")
+                case "maximize":
+                    options.add_argument("--start-maximized")
+                case "headless":
+                    options.add_argument("--headless")
+                case "disable_popup":
+                    options.add_argument("--disable-popup-blocking")
+                case "disable_info_bar":
+                    options.add_argument("--disable-infobars")
+                case "prevent_sleep":
+                    prevent_sleep = True
+                case "keep_browser_open":
+                    keep_browser_open = True
+                case _:
+                    options.add_argument(option)
+
         if keep_browser_open or self.debug:
             options.add_experimental_option("detach", value=True)
-        if not audio:
-            options.add_argument("--mute-audio")
-        if maximize:
-            options.add_argument("--start-maximized")
-        if headless:
-            options.add_argument("--headless")
-        if not popup:
-            options.add_argument("--disable-popup-blocking")
-        if not info_bar:
-            options.add_argument("--disable-infobars")
+
+        for key, value in kwargs.items():
+            options.add_experimental_option(key, value)
 
         super().__init__(options=options)
 
@@ -158,6 +195,7 @@ class SwChrome(Chrome, Findable):
         *,
         until: str | None = None,
         korean_year=False,
+        display=False,
     ):
         """
         특정 시간 동안 또는 특정 시간까지 대기합니다.
@@ -220,8 +258,8 @@ class SwChrome(Chrome, Findable):
                 convert_date_string(until, korean_year=korean_year) - datetime.now()
             ).total_seconds()
 
-        if self.debug:
-            print("\n**ES_DEBUGGER: wait for", dur, "seconds")
+        if display:
+            print("Waiting for", dur, "seconds")
 
             def print_remaining_time(remaining_time):
                 while remaining_time > 0:
