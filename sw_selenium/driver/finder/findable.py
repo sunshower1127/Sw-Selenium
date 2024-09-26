@@ -1,6 +1,18 @@
 """
 Findable Interface
 
+This module provides the Findable interface, which defines methods for finding
+single or multiple elements based on various criteria. It includes support for
+XPath generation and logical operators for element selection.
+
+Classes:
+    Findable: An interface for finding elements.
+
+Types:
+    AxisStr: A type representing the direction in which to search for elements
+             relative to the current node.
+    ExprStr: A type representing a string expression that supports logical
+             operators for element selection.
 """
 
 from __future__ import annotations
@@ -35,27 +47,42 @@ AxisStr = Literal[
     "preceding-sibling",
 ]
 """
-axis_str 타입 설명
+AxisStr type description
 
+Represents the direction in which to search for elements relative to the current node.
+
+For more information, refer to:
+https://www.w3schools.com/xml/xpath_axes.asp
 """
 
 ExprStr = str
 """
-expr_str 타입 설명
+ExprStr type description
 
+Represents a string expression that supports logical operators for element selection.
+
+Supported operators:
+- `|` and `&` for logical OR and AND, respectively. Example: id="id1 | id2"
+- `!` for logical NOT. Example: id="!id1"
+- Parentheses `()` for grouping. Example: id="(id1 | id2) & !id3"
+- Whitespace is supported. Example: text="hi everyone | hello world"
+- Both double and single quotes are supported. Example: text="'(01:00)' | '(02:00)'"
 """
 
 
 class Findable:
     """
-    Interface for find, find_all
+    Interface for finding elements.
 
+    Provides methods to find single or multiple elements based on various criteria.
     """
 
     if TYPE_CHECKING:
         _driver: SwChrome
-        find_element: Callable[[str, str], WebElement]
-        find_elements: Callable[[str, str], list[WebElement]]
+        find_element: Callable[[str, str], WebElement]  # Already exists in selenium
+        find_elements: Callable[
+            [str, str], list[WebElement]
+        ]  # Already exists in selenium
 
     def find(
         self,
@@ -66,7 +93,6 @@ class Findable:
         tag="*",
         id: ExprStr | None = None,
         id_contains: ExprStr | None = None,
-        name: ExprStr | None = None,
         class_name: ExprStr | None = None,
         class_name_contains: ExprStr | None = None,
         text: ExprStr | None = None,
@@ -74,9 +100,34 @@ class Findable:
         **kwargs: ExprStr,
     ):
         """
-        find
+        Finds a single element based on the given criteria.
 
+        Raises:
+            NoSuchElementException: If the element is not found.
+
+        Args:
+            xpath (str): The XPath of the element to find.
+
+            axis (AxisStr): The axis direction for the search.
+            tag (str): The tag name of the element.
+            `prop` (ExprStr, optional): The property of the element.(`class` is renamed to `class_name`)
+            `prop`_contains (ExprStr, optional): The substring of the property.
+            **kwargs (ExprStr): Additional criteria.
+
+        Returns:
+            SwElement: The found element.
+
+        Examples:
+            ```python
+            element = web.find(tag="input", id="username")
+            element = web.find(text="Sign In | Sign Up")
+            element = web.find(class_name_contains="btn & !primary")
+            element = web.find(axis="child")
+            element = web.find("//*[contains(@class, 'btn')]")
+            # Xpath copied by brower inspector
+            ```
         """
+
         xpath = xpath or generate_xpath(**locals())
         if self._driver.debug:
             print(f"LOG: find: {xpath=}")
@@ -101,7 +152,6 @@ class Findable:
         tag="*",
         id: ExprStr | None = None,
         id_contains: ExprStr | None = None,
-        name: ExprStr | None = None,
         class_name: ExprStr | None = None,
         class_name_contains: ExprStr | None = None,
         text: ExprStr | None = None,
@@ -109,7 +159,32 @@ class Findable:
         **kwargs: ExprStr,
     ):
         """
-        find or none
+        Finds a single element based on the given criteria.
+
+        Difference from `find` method:
+        - Does not raise `NoSuchElementException` if the element is not found. Returns `None` instead.
+
+        Args:
+            xpath (str): The XPath of the element to find.
+
+            axis (AxisStr): The axis direction for the search.
+            tag (str): The tag name of the element.
+            `prop` (ExprStr, optional): The property of the element.(**`class` is renamed to `class_name`**)
+            `prop`_contains (ExprStr, optional): The substring of the property.
+            **kwargs (ExprStr): Additional criteria.
+
+        Returns:
+            SwElement: The found element.
+
+        Examples:
+            ```python
+            element = web.find(tag="input", id="username")
+            element = web.find(text="Sign In | Sign Up")
+            element = web.find(class_name_contains="btn & !primary")
+            element = web.find(axis="child")
+            element = web.find("//*[contains(@class, 'btn')]")
+            # Xpath copied by brower inspector
+            ```
         """
 
         xpath = xpath or generate_xpath(**locals())
@@ -128,7 +203,6 @@ class Findable:
         tag="*",
         id: ExprStr | None = None,
         id_contains: ExprStr | None = None,
-        name: ExprStr | None = None,
         class_name: ExprStr | None = None,
         class_name_contains: ExprStr | None = None,
         text: ExprStr | None = None,
@@ -136,7 +210,22 @@ class Findable:
         **kwargs: ExprStr,
     ):
         """
-        find all
+        Finds all elements based on the given criteria.
+
+        Args:
+            xpath (str): The XPath of the elements to find.
+
+            axis (AxisStr): The axis direction for the search.
+            tag (str): The tag name of the element.
+            `prop` (ExprStr, optional): The property of the element.(**`class` is renamed to `class_name`**)
+            `prop`_contains (ExprStr, optional): The substring of the property.
+            **kwargs (ExprStr): Additional criteria.
+
+        Returns:
+            SwElements: The found elements.
+
+        Raises:
+            NoSuchElementException: If no elements are found.
         """
 
         xpath = xpath or generate_xpath(**locals())
@@ -155,7 +244,6 @@ class Findable:
         tag="*",
         id: ExprStr | None = None,
         id_contains: ExprStr | None = None,
-        name: ExprStr | None = None,
         class_name: ExprStr | None = None,
         class_name_contains: ExprStr | None = None,
         text: ExprStr | None = None,
@@ -163,7 +251,22 @@ class Findable:
         **kwargs: ExprStr,
     ):
         """
-        find all or none
+        Finds all elements based on the given criteria.
+
+        Difference from `find_all` method:
+        - Does not raise `NoSuchElementException` if no elements are found. Returns `None` instead.
+
+        Args:
+            xpath (str): The XPath of the elements to find.
+
+            axis (AxisStr): The axis direction for the search.
+            tag (str): The tag name of the element.
+            `prop` (ExprStr, optional): The property of the element.(**`class` is renamed to `class_name`**)
+            `prop`_contains (ExprStr, optional): The substring of the property.
+            **kwargs (ExprStr): Additional criteria.
+
+        Returns:
+        SwElements | None: The found elements or None if no elements are found.
         """
 
         xpath = xpath or generate_xpath(**locals())
