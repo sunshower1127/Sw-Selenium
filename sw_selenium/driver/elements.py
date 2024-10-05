@@ -2,18 +2,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
 
-from ..parser.xpath_parser import generate_xpath
+from ..parser.xpath_parser import AxisStr, ExprStr, generate_xpath
 
 if TYPE_CHECKING:
     from .element import SwElement
-    from .finder.findable import AxisStr, ExprStr
 
 
 class SwElements:
     def __init__(self, elements: list[SwElement]):
         self._elements = elements
         self._index = 0
-        self.texts = [element.text for element in self._elements]
 
     def __getitem__(self, index: int):
         return self._elements[index]
@@ -33,16 +31,24 @@ class SwElements:
     def __bool__(self):
         return bool(self._elements)
 
-    def up(self, levels=1):
-        return SwElements([element.up(levels) for element in self._elements])
+    @property
+    def text(self):
+        """text들 모두 반환 -> 근데 text가 없으면 어떻게 되는거임?"""
+        return [element.text for element in self._elements]
+
+    # 이거 프로퍼티로 바꿔야함 element 따라서
+    @property
+    def up(self):
+        return SwElements([element.up for element in self._elements])
 
     def find(
         self,
         xpath="",
+        /,
         *,
         axis: AxisStr = "descendant",
         tag="*",
-        id: ExprStr | None = None,
+        id: ExprStr | None = None,  # noqa: A002
         id_contains: ExprStr | None = None,
         name: ExprStr | None = None,
         class_name: ExprStr | None = None,
@@ -58,12 +64,12 @@ class SwElements:
     def find_or_none(
         self,
         xpath="",
+        /,
         *,
         axis: AxisStr = "descendant",
         tag="*",
-        id: ExprStr | None = None,
+        id: ExprStr | None = None,  # noqa: A002
         id_contains: ExprStr | None = None,
-        name: ExprStr | None = None,
         class_name: ExprStr | None = None,
         class_name_contains: ExprStr | None = None,
         text: ExprStr | None = None,
@@ -91,7 +97,7 @@ class SwElements:
             for element, key in zip(self._elements, keys):
                 element.send_keys(key)
 
-    def get_attributes(
+    def get_attribute(
         self,
         name: str,
     ):

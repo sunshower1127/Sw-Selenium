@@ -1,6 +1,4 @@
-"""
-builder
-"""
+"""builder"""
 
 from __future__ import annotations
 
@@ -19,9 +17,7 @@ class _SwSeleniumBuilder:
         never_stop=False,
         on_success: Callable[[list[int]], None] | None = None,
     ):
-        """
-        builder.start(__file__)
-        """
+        """builder.start(__file__)"""
 
         if os.environ.get("ES_BUILD") == "1":
             return
@@ -71,8 +67,7 @@ class _SwSeleniumBuilder:
                     p.wait()
 
     def build(self, file_path: str, dist_path="."):
-        """
-        builder.build(__file__)
+        """builder.build(__file__)
         Only working in development environment
         """
 

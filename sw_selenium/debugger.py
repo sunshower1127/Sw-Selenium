@@ -1,7 +1,4 @@
-"""
-debugger
-
-"""
+"""debugger"""
 
 from __future__ import annotations
 
@@ -14,9 +11,7 @@ class _SwSeleniumDebugger:
     QUIT_CODE = 2
 
     def start(self, path: str):
-        """
-        debugger.run(__file__)
-        """
+        """debugger.run(__file__)"""
 
         if os.environ.get("ES_DEBUG") == "1":
             return

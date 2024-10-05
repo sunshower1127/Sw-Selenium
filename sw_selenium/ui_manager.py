@@ -1,5 +1,4 @@
-"""
-ui_manager
+"""ui_manager
 tkinter
 
 """
@@ -10,8 +9,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Literal, TypeVar
 
 from lazy_import import lazy_module
-
-tk = lazy_module("tkinter")
 
 if TYPE_CHECKING:
     import tkinter as tk
@@ -28,8 +25,7 @@ def get_input_from_alert(
     data_type: type[T] = str,
     validate_func: Callable[[T], bool] | None = None,
 ) -> T:
-    """
-    Displays an alert dialog with a title and body,
+    """Displays an alert dialog with a title and body,
     and returns the user's input cast to the specified type.
 
     :param body: The body message of the alert dialog.
@@ -64,8 +60,7 @@ def get_input_from_alert(
 
 
 def get_button_choice(button_texts: list[str]) -> int:
-    """
-    Displays a dialog with buttons and returns the index of the clicked button.
+    """Displays a dialog with buttons and returns the index of the clicked button.
 
     :param button_texts: A list of texts for the buttons.
     :return: The index of the clicked button.
@@ -100,8 +95,7 @@ def get_data_from_file_or_ui(
     data_type: type[T] = str,
     encoding: Literal["utf-8", "euc-kr", "ascii"] = "utf-8",
 ) -> list[T]:
-    """
-    주어진 파일에서 줄바꿈으로 구분된 문자열들을 읽어 리스트로 반환합니다.
+    """주어진 파일에서 줄바꿈으로 구분된 문자열들을 읽어 리스트로 반환합니다.
 
     파일이 없거나 읽기 중 에러가 발생하면,
     사용자에게 문자열을 입력받아 파일에 저장하고 리스트로 반환합니다.

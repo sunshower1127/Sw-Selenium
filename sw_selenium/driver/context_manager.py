@@ -1,5 +1,4 @@
-"""
-Context Manager
+"""Context Manager
 
 This module provides context managers for handling exceptions and retry configurations.
 
@@ -17,24 +16,22 @@ if TYPE_CHECKING:
 
 
 class NoException:
-    """
-    Context manager to suppress specified exceptions.
+    """Context manager to suppress specified exceptions.
 
     Attributes:
         driver (SwChrome): The SwChrome driver instance.
         debug (bool): The original debug state of the driver.
-        include_exceptions (Optional[Tuple[Type[BaseException], ...]]): Exceptions to include for suppression.
-        exclude_exceptions (Optional[Tuple[Type[BaseException], ...]]): Exceptions to exclude from suppression.
+        include_exceptions (tuple[type[BaseException], ...] | None): Exceptions to include for suppression.
+        exclude_exceptions (tuple[type[BaseException], ...] | None): Exceptions to exclude from suppression.
     """
 
     def __init__(
         self,
         driver: SwChrome,
-        include_exceptions: tuple[type[BaseException], ...] | None = None,
-        exclude_exceptions: tuple[type[BaseException], ...] | None = None,
+        include_exceptions: tuple[type[BaseException], ...],
+        exclude_exceptions: tuple[type[BaseException], ...],
     ):
-        """
-        Initializes the NoException context manager.
+        """Initializes the NoException context manager.
 
         Args:
             driver (SwChrome): The SwChrome driver instance.
@@ -47,16 +44,13 @@ class NoException:
         self.exclude_exceptions = exclude_exceptions
 
     def __enter__(self):
-        """
-        Enters the context manager, disabling debug mode if it was enabled.
-        """
+        """Enters the context manager, disabling debug mode if it was enabled."""
         if self.debug:
             self.driver.debug = False
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """
-        Exits the context manager, restoring the original debug state and suppressing specified exceptions.
+        """Exits the context manager, restoring the original debug state and suppressing specified exceptions.
 
         Args:
             exc_type (Type[BaseException]): The exception type.
@@ -77,15 +71,14 @@ class NoException:
         ):
             return False
 
-        if self.exclude_exceptions and issubclass(exc_type, self.exclude_exceptions):
+        if self.exclude_exceptions and issubclass(exc_type, self.exclude_exceptions):  # noqa: SIM103
             return False
 
         return True
 
 
 class RetryConfig:
-    """
-    Context manager to modify retry configurations.
+    """Context manager to modify retry configurations.
 
     Attributes:
         driver (SwChrome): The SwChrome driver instance.
@@ -101,8 +94,7 @@ class RetryConfig:
         retry_timeout: float | None = None,
         retry_frequency: float | None = None,
     ):
-        """
-        Initializes the RetryConfig context manager.
+        """Initializes the RetryConfig context manager.
 
         Args:
             driver (SwChrome): The SwChrome driver instance.
@@ -110,22 +102,19 @@ class RetryConfig:
             retry_frequency (float | None): The new frequency value.
         """
         self.driver = driver
-        self.orig_timeout = self.driver._timeout
-        self.orig_freq = self.driver._freq
+        self.orig_timeout = self.driver.timeout
+        self.orig_freq = self.driver.freq
         self.retry_timeout = retry_timeout or self.orig_timeout
         self.retry_frequency = retry_frequency or self.orig_freq
 
     def __enter__(self):
-        """
-        Enters the context manager, setting the new retry configurations.
-        """
-        self.driver._timeout = self.retry_timeout
-        self.driver._freq = self.retry_frequency
+        """Enters the context manager, setting the new retry configurations."""
+        self.driver.timeout = self.retry_timeout
+        self.driver.freq = self.retry_frequency
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """
-        Exits the context manager, restoring the original retry configurations.
+        """Exits the context manager, restoring the original retry configurations.
 
         Args:
             exc_type (Type[BaseException]): The exception type.
@@ -135,6 +124,6 @@ class RetryConfig:
         Returns:
             bool: False to indicate that exceptions should not be suppressed.
         """
-        self.driver._timeout = self.orig_timeout
-        self.driver._freq = self.orig_freq
+        self.driver.timeout = self.orig_timeout
+        self.driver.freq = self.orig_freq
         return False

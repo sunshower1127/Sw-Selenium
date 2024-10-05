@@ -1,5 +1,4 @@
-"""
-debug_finder
+"""debug_finder
 
 This module provides the ContextFinder class, which helps in finding the context
 (window and frame) of an element when it cannot be found in debug mode.
@@ -13,7 +12,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .. import SwChrome
+    from . import SwChrome
 
 from selenium.common.exceptions import NoSuchElementException
 
@@ -23,8 +22,7 @@ context = tuple[window_index, frame_path]
 
 
 class ContextFinder:
-    """
-    ContextFinder class helps in finding the context (window and frame) of an element
+    """ContextFinder class helps in finding the context (window and frame) of an element
     when it cannot be found in debug mode. It provides functionalities to search for
     the element across different windows and frames.
 
@@ -34,8 +32,7 @@ class ContextFinder:
     """
 
     def __init__(self, driver: SwChrome):
-        """
-        Initializes the ContextFinder with the given SwChrome driver.
+        """Initializes the ContextFinder with the given SwChrome driver.
 
         Args:
             driver (SwChrome): The SwChrome driver instance.
@@ -44,8 +41,7 @@ class ContextFinder:
         self.contexts: list[context] = []
 
     def search(self, xpath: str):
-        """
-        Searches for the element specified by the given XPath across different contexts
+        """Searches for the element specified by the given XPath across different contexts
         (windows and frames). If the element is found, it prompts the user to select
         the desired context.
 
@@ -59,7 +55,6 @@ class ContextFinder:
         self.current_window_index = self.driver.window_handles.index(
             self.driver.current_window_handle
         )
-
         self._search_all_contexts()
         self.driver.goto_window(self.current_window_index)
         self.driver.goto_frame("/")
@@ -90,9 +85,7 @@ class ContextFinder:
         print(f'self.driver.goto_frame("{frame_path}")')
 
     def _search_all_contexts(self):
-        """
-        Internal method to search for the element across all windows and frames.
-        """
+        """Internal method to search for the element across all windows and frames."""
         with self.driver.no_exc(), self.driver.set_retry(1, 0.1):
             indices = list(range(len(self.driver.window_handles)))
             indices = (
@@ -106,8 +99,7 @@ class ContextFinder:
                 self._depth_first_search(window_index, frame_list)
 
     def _depth_first_search(self, window_index, frame_list):
-        """
-        Internal method to perform a depth-first search (DFS) for the element
+        """Internal method to perform a depth-first search (DFS) for the element
         within the given window and frame list.
 
         Args:
@@ -124,7 +116,7 @@ class ContextFinder:
 
         # find iframe
         try:
-            frame_ids = self.driver.find_all(tag="iframe").get_attributes("id")
+            frame_ids = self.driver.find_all(tag="iframe").get_attribute("id")
             for frame_id in frame_ids:
                 if frame_id is None:
                     continue
@@ -137,8 +129,7 @@ class ContextFinder:
             print("\t No frame")
 
     def _format_contexts(self):
-        """
-        Internal method to generate a string representation of the found contexts.
+        """Internal method to generate a string representation of the found contexts.
 
         Returns:
             str: A string representation of the contexts.
@@ -153,8 +144,7 @@ class ContextFinder:
         return "\n".join(f"#{i + 1}\n{output}" for i, output in enumerate(outputs))
 
     def _get_user_input(self, message):
-        """
-        Internal method to get user input for selecting a context.
+        """Internal method to get user input for selecting a context.
 
         Args:
             message (str): The message to display to the user.

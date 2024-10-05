@@ -1,5 +1,4 @@
-"""
-driver
+"""driver
 
 keyboard -> 추가 설치 필요
 selenium
@@ -12,22 +11,31 @@ import os
 import threading
 import time
 from datetime import datetime
-from typing import TYPE_CHECKING, Callable, Iterable, Literal
+from typing import TYPE_CHECKING, Callable, Literal
 
 import urllib3
 from lazy_import import lazy_module
-from selenium.common.exceptions import NoSuchWindowException, WebDriverException
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    NoSuchWindowException,
+    WebDriverException,
+)
 from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.by import By
+
+from sw_selenium.parser.xpath_parser import generate_xpath
 
 from ..parser.dateutil_parser import convert_date_string
+from .context_finder import ContextFinder
 from .context_manager import NoException, RetryConfig
 from .element import SwElement
-from .finder.context_finder import ContextFinder
-from .finder.findable import Findable
+from .elements import SwElements
 
 if TYPE_CHECKING:
     import keyboard
+
+    from sw_selenium.parser.xpath_parser import ExprStr
 else:
     keyboard = lazy_module("keyboard")
 
@@ -45,19 +53,19 @@ SwOption = Literal[
     "prevent_sleep",
     "disable_info_bar",
 ]
+
 ChromeOptionArg = str
-"""
-ChromeOptions().add_argument() 메서드의 인자 타입
+"""ChromeOptions().add_argument() 메서드의 인자 타입
 예)
 "--mute-audio"
 """
+
 ChromeExperimentalOption = str
-"""
-ChromeOptions().add_experimental_option(key, value) 메서드의 인자 타입
+"""ChromeOptions().add_experimental_option(key, value) 메서드의 인자 타입
 """
 
 
-class SwChrome(Chrome, Findable):
+class SwChrome(Chrome):
     def __init__(
         self,
         *args: SwOption | ChromeOptionArg,
@@ -65,8 +73,7 @@ class SwChrome(Chrome, Findable):
         freq=0.5,
         **kwargs: ChromeExperimentalOption,
     ):
-        """
-        SwChrome 클래스의 초기화 메서드.
+        """SwChrome 클래스의 초기화 메서드.
 
         Args:
             timeout (float, optional): WebDriver의 기본 타임아웃 시간 (초 단위). 기본값은 5.0.
@@ -95,24 +102,21 @@ class SwChrome(Chrome, Findable):
         prevent_sleep = False
         keep_browser_open = False
 
+        option_map = {
+            "mute_audio": "--mute-audio",
+            "maximize": "--start-maximized",
+            "headless": "--headless",
+            "disable_popup": "--disable-popup-blocking",
+            "disable_info_bar": "--disable-infobars",
+        }
+
         for option in args:
-            match option:
-                case "mute_audio":
-                    options.add_argument("--mute-audio")
-                case "maximize":
-                    options.add_argument("--start-maximized")
-                case "headless":
-                    options.add_argument("--headless")
-                case "disable_popup":
-                    options.add_argument("--disable-popup-blocking")
-                case "disable_info_bar":
-                    options.add_argument("--disable-infobars")
-                case "prevent_sleep":
-                    prevent_sleep = True
-                case "keep_browser_open":
-                    keep_browser_open = True
-                case _:
-                    options.add_argument(option)
+            if option == "prevent_sleep":
+                prevent_sleep = True
+            elif option == "keep_browser_open":
+                keep_browser_open = True
+            else:
+                options.add_argument(option_map.get(option) or option)
 
         if keep_browser_open or self.debug:
             options.add_experimental_option("detach", value=True)
@@ -128,10 +132,9 @@ class SwChrome(Chrome, Findable):
         # selenium의 implicitly_wait와 explicit_wait는 빠르게 동작하지 않음.
         # 따라서, try-except-pass로 구현된 _repeat 메서드를 사용하여 대체함.
         self.implicitly_wait(0)
-        self._driver = self
-        self._context_finder = ContextFinder(self)
-        self._timeout = timeout
-        self._freq = freq
+        self.context_finder = ContextFinder(self)
+        self.timeout = timeout
+        self.freq = freq
 
     def __del__(self):
         if self.debug:
@@ -139,16 +142,15 @@ class SwChrome(Chrome, Findable):
 
     def no_exc(
         self,
-        include: Iterable[type[Exception]] = (WebDriverException,),
-        exclude: Iterable[type[Exception]] = (),
+        include: tuple[type[BaseException], ...] = (WebDriverException,),
+        exclude: tuple[type[BaseException], ...] = (),
     ):
-        """
-        코드 실행 중 발생하는 모든 예외를 무시합니다.
+        """코드 실행 중 발생하는 모든 예외를 무시합니다.
         도중에 예외가 발생하면 with 구문을 빠져나옵니다.
 
         Args:
-            include (Iterable[type[Exception]], optional): 무시할 예외의 리스트. 기본값은 (WebDriverException, ).
-            exclude (Iterable[type[Exception]], optional): 무시하지 않을 예외의 리스트. 기본값은 ().
+            include (tuple[type[BaseException], ...]): 무시할 예외의 리스트. 기본값은 (WebDriverException, ).
+            exclude (tuple[type[BaseException], ...]): 무시하지 않을 예외의 리스트. 기본값은 ().
 
         Returns:
             NoException: 예외 무시 객체. -> with 구문으로 사용
@@ -166,8 +168,7 @@ class SwChrome(Chrome, Findable):
         return NoException(self, include, exclude)
 
     def set_retry(self, timeout: float | None = None, freq: float | None = None):
-        """
-        요소를 찾기 위한 재시도 설정을 구성합니다.
+        """요소를 찾기 위한 재시도 설정을 구성합니다.
 
         Args:
             timeout (float, optional): 요소를 찾기 위한 최대 대기 시간 (초 단위). 기본값은 None. -> 기존의 쓰던 값
@@ -189,6 +190,184 @@ class SwChrome(Chrome, Findable):
         """
         return RetryConfig(self, timeout, freq)
 
+    def find(  # noqa: D417
+        self,
+        xpath="",
+        /,
+        *,
+        tag="*",
+        id: ExprStr | None = None,  # noqa: A002
+        id_contains: ExprStr | None = None,
+        class_name: ExprStr | None = None,
+        class_name_contains: ExprStr | None = None,
+        text: ExprStr | None = None,
+        text_contains: ExprStr | None = None,
+        **kwargs: ExprStr,
+    ):
+        """Finds a single element based on the given criteria.
+
+        Raises:
+            NoSuchElementException: If the element is not found.
+
+        Args:
+            xpath (str): The XPath of the element to find.
+
+            tag (str): The tag name of the element.
+            `prop` (ExprStr, optional): The property of the element.(`class` is renamed to `class_name`)
+            `prop`_contains (ExprStr, optional): The substring of the property.
+            **kwargs (ExprStr): Additional criteria.
+
+        Returns:
+            SwElement: The found element.
+
+        Examples:
+            ```python
+            element = web.find(tag="input", id="username")
+            element = web.find(text="Sign In | Sign Up")
+            element = web.find(class_name_contains="btn & !primary")
+            element = web.find(axis="child")
+            element = web.find("//*[contains(@class, 'btn')]")
+            # Xpath copied by brower inspector
+            ```
+        """
+
+        xpath = xpath or generate_xpath(**locals())
+        if self.debug:
+            print(f"LOG: find: {xpath=}")
+        try:
+            return SwElement(
+                self.retry(lambda: self.find_element(By.XPATH, xpath)), xpath
+            )
+        except NoSuchElementException:
+            if self.debug:
+                self.context_finder.search(xpath)
+                return SwElement(self.find_element(By.XPATH, xpath), xpath)
+            else:
+                msg = f"\n**Element not found**\n{xpath=}\n"
+                raise NoSuchElementException(msg) from None
+
+    def find_or_none(  # noqa: D417
+        self,
+        xpath="",
+        /,
+        *,
+        tag="*",
+        id: ExprStr | None = None,  # noqa: A002
+        id_contains: ExprStr | None = None,
+        class_name: ExprStr | None = None,
+        class_name_contains: ExprStr | None = None,
+        text: ExprStr | None = None,
+        text_contains: ExprStr | None = None,
+        **kwargs: ExprStr,
+    ):
+        """Finds a single element based on the given criteria.
+
+        Difference from `find` method:
+        - Does not raise `NoSuchElementException` if the element is not found. Returns `None` instead.
+
+        Args:
+            xpath (str): The XPath of the element to find.
+
+            tag (str): The tag name of the element.
+            `prop` (ExprStr, optional): The property of the element.(**`class` is renamed to `class_name`**)
+            `prop`_contains (ExprStr, optional): The substring of the property.
+            **kwargs (ExprStr): Additional criteria.
+
+        Returns:
+            SwElement: The found element.
+
+        Examples:
+            ```python
+            element = web.find(tag="input", id="username")
+            element = web.find(text="Sign In | Sign Up")
+            element = web.find(class_name_contains="btn & !primary")
+            element = web.find(axis="child")
+            element = web.find("//*[contains(@class, 'btn')]")
+            # Xpath copied by brower inspector
+            ```
+        """
+
+        xpath = xpath or generate_xpath(**locals())
+
+        try:
+            return SwElement(self.find_element(By.XPATH, xpath), xpath)
+        except NoSuchElementException:
+            return None
+
+    def find_all(  # noqa: D417
+        self,
+        xpath="",
+        /,
+        *,
+        tag="*",
+        id: ExprStr | None = None,  # noqa: A002
+        id_contains: ExprStr | None = None,
+        class_name: ExprStr | None = None,
+        class_name_contains: ExprStr | None = None,
+        text: ExprStr | None = None,
+        text_contains: ExprStr | None = None,
+        **kwargs: ExprStr,
+    ):
+        """Finds all elements based on the given criteria.
+
+        Args:
+            xpath (str): The XPath of the elements to find.
+
+            tag (str): The tag name of the element.
+            `prop` (ExprStr, optional): The property of the element.(**`class` is renamed to `class_name`**)
+            `prop`_contains (ExprStr, optional): The substring of the property.
+            **kwargs (ExprStr): Additional criteria.
+
+        Returns:
+            SwElements: The found elements.
+
+        Raises:
+            NoSuchElementException: If no elements are found.
+        """
+
+        xpath = xpath or generate_xpath(**locals())
+
+        self.find(xpath)
+        return SwElements(
+            [SwElement(e, xpath) for e in self.find_elements(By.XPATH, xpath)]
+        )
+
+    def find_all_or_none(  # noqa: D417
+        self,
+        xpath="",
+        /,
+        *,
+        tag="*",
+        id: ExprStr | None = None,  # noqa: A002
+        id_contains: ExprStr | None = None,
+        class_name: ExprStr | None = None,
+        class_name_contains: ExprStr | None = None,
+        text: ExprStr | None = None,
+        text_contains: ExprStr | None = None,
+        **kwargs: ExprStr,
+    ):
+        """Finds all elements based on the given criteria.
+        Difference from `find_all` method:
+        - Does not raise `NoSuchElementException` if no elements are found. Returns `None` instead.
+
+        Args:
+            xpath (str): The XPath of the elements to find.
+
+            tag (str): The tag name of the element.
+            `prop` (ExprStr, optional): The property of the element.(**`class` is renamed to `class_name`**)
+            `prop`_contains (ExprStr, optional): The substring of the property.
+            **kwargs (ExprStr): Additional criteria.
+
+        Returns:
+        SwElements | None: The found elements or None if no elements are found.
+        """
+
+        xpath = xpath or generate_xpath(**locals())
+
+        return SwElements(
+            [SwElement(e, xpath) for e in self.find_elements(By.XPATH, xpath)]
+        )
+
     def wait(
         self,
         dur: float | str | tuple[str, str] | None = None,
@@ -197,8 +376,7 @@ class SwChrome(Chrome, Findable):
         korean_year=False,
         display=False,
     ):
-        """
-        특정 시간 동안 또는 특정 시간까지 대기합니다.
+        """특정 시간 동안 또는 특정 시간까지 대기합니다.
 
         Args:
             dur (float | str | tuple[str, str], optional): 대기할 시간. 기본값은 None.
@@ -231,6 +409,7 @@ class SwChrome(Chrome, Findable):
             ```
 
         """
+
         if isinstance(dur, str):
             # convert_date_string 함수로 받은 datetime 값
             converted_datetime = convert_date_string(dur, korean_year=korean_year)
@@ -275,8 +454,7 @@ class SwChrome(Chrome, Findable):
             time.sleep(dur)
 
     def add_hotkey(self, key: str, callback: Callable):
-        """
-        특정 키보드 입력에 대한 핫키를 추가합니다. -> keyboard 모듈 사용
+        """특정 키보드 입력에 대한 핫키를 추가합니다. -> keyboard 모듈 사용
 
         Args:
             key (str): 키보드의 키를 나타내는 문자열.
@@ -293,8 +471,7 @@ class SwChrome(Chrome, Findable):
         keyboard.add_hotkey(key, callback)
 
     def remove_hotkey(self, key: str):
-        """
-        특정 키보드 입력에 대한 핫키를 제거합니다. -> keyboard 모듈 사용
+        """특정 키보드 입력에 대한 핫키를 제거합니다. -> keyboard 모듈 사용
 
         Args:
             key (str): 키보드의 키를 나타내는 문자열.
@@ -310,8 +487,7 @@ class SwChrome(Chrome, Findable):
         keyboard.remove_hotkey(key)
 
     def wait_hotkey(self, key: str):
-        """
-        특정 키보드 입력을 대기합니다. -> keyboard 모듈 사용
+        """특정 키보드 입력을 대기합니다. -> keyboard 모듈 사용
 
         Args:
             key (str): 키보드의 키를 나타내는 문자열.
@@ -334,9 +510,7 @@ class SwChrome(Chrome, Findable):
         keyboard.wait(key)
 
     def close_all(self):
-        """
-        모든 창을 닫습니다.
-        """
+        """모든 창을 닫습니다."""
         for window_handle in self.window_handles:
             try:
                 self.switch_to.window(window_handle)
@@ -345,8 +519,7 @@ class SwChrome(Chrome, Findable):
                 pass
 
     def goto_frame(self, path="/"):
-        """
-        주어진 경로를 따라 프레임으로 전환합니다.
+        """주어진 경로를 따라 프레임으로 전환합니다.
 
         Args:
             path (str, optional): 전환할 프레임의 경로. 기본값은 "/".
@@ -389,11 +562,10 @@ class SwChrome(Chrome, Findable):
             elif node.isdigit():
                 self.switch_to.frame(int(node))
             else:
-                self._retry(lambda node=node: self.switch_to.frame(node))
+                self.retry(lambda node=node: self.switch_to.frame(node))
 
     def goto_window(self, i=0):
-        """
-        주어진 인덱스의 윈도우로 전환합니다.
+        """주어진 인덱스의 윈도우로 전환합니다.
 
         Args:
             i (int, optional): 전환할 윈도우의 인덱스. 기본값은 0.
@@ -410,11 +582,10 @@ class SwChrome(Chrome, Findable):
 
         """
 
-        self._retry(lambda: self.switch_to.window(self.window_handles[i]))
+        self.retry(lambda: self.switch_to.window(self.window_handles[i]))
 
     def goto_alert(self):
-        """
-        현재 활성화된 경고(alert)로 전환합니다.
+        """현재 활성화된 경고(alert)로 전환합니다.
 
         Returns:
             Alert: 현재 활성화된 경고 객체.
@@ -426,44 +597,40 @@ class SwChrome(Chrome, Findable):
                 web.goto_alert().accept()  # 경고 수락
             ```
         """
-        return self._retry(lambda: self.switch_to.alert)
+        return self.retry(lambda: self.switch_to.alert)
 
-    def goto_focused_element(self):
-        """
-        현재 포커스된 요소로 전환합니다.
+    # def goto_focused_element(self):
+    #     """현재 포커스된 요소로 전환합니다.
 
-        Returns:
-            Element: 현재 포커스된 요소 객체.
+    #     Returns:
+    #         Element: 현재 포커스된 요소 객체.
 
-        Examples:
-            ```python
-            # 현재 포커스된 요소로 전환
-            focused_element = web.goto_focused_element()
-            focused_element.click()  # 포커스된 요소 클릭
-            ```
-        """
-        return self._retry(lambda: SwElement(self.switch_to.active_element))
+    #     Examples:
+    #         ```python
+    #         # 현재 포커스된 요소로 전환
+    #         focused_element = web.goto_focused_element()
+    #         focused_element.click()  # 포커스된 요소 클릭
+    #         ```
+    #     """
+    #     return self._retry(lambda: SwElement(self.switch_to.active_element))
 
-    def _retry(self, func: Callable):
-        """
-        func을 실행하고, 예외가 발생하면 timeout 시간 동안 freq 간격으로 재시도합니다.
+    def retry(self, func: Callable):
+        """func을 실행하고, 예외가 발생하면 timeout 시간 동안 freq 간격으로 재시도합니다.
 
         실패시 마지막 시도의 에러를 반환.
         """
-        end_time = time.time() + self._timeout
+        end_time = time.time() + self.timeout
         while time.time() < end_time:
             try:
                 return func()
             except WebDriverException:
                 pass
-            time.sleep(self._freq)
+            time.sleep(self.freq)
 
         return func()
 
     def _caffeinate(self):
-        """
-        30초마다 마우스 움직여서 컴퓨터가 대기 모드에 빠지지 않도록 함.
-        """
+        """30초마다 마우스 움직여서 컴퓨터가 대기 모드에 빠지지 않도록 함."""
 
         def move_mouse():
             while True:

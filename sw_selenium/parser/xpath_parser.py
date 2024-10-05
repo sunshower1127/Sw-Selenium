@@ -1,10 +1,11 @@
-"""
-xpath_parser
+"""xpath_parser
 
 pyparsing
 """
 
 from __future__ import annotations
+
+from typing import Literal
 
 from pyparsing import (
     Combine,
@@ -19,6 +20,44 @@ from pyparsing import (
     opAssoc,
     pyparsing_unicode,
 )
+
+AxisStr = Literal[
+    "ancestor",
+    "ancestor-or-self",
+    "attribute",
+    "child",
+    "descendant",
+    "descendant-or-self",
+    "following",
+    "following-sibling",
+    "parent",
+    "preceding",
+    "preceding-sibling",
+    "self",
+]
+"""
+AxisStr type description
+
+Represents the direction in which to search for elements relative to the current node.
+
+For more information, refer to:
+https://www.w3schools.com/xml/xpath_axes.asp
+"""
+
+ExprStr = str
+"""
+ExprStr type description
+
+Represents a string expression that supports logical operators for element selection.
+
+Supported operators:
+- `|` and `&` for logical OR and AND, respectively. Example: id="id1 | id2"
+- `!` for logical NOT. Example: id="!id1"
+- Parentheses `()` for grouping. Example: id="(id1 | id2) & !id3"
+- Whitespace is supported. Example: text="hi everyone | hello world"
+- Both double and single quotes are supported. Example: text="'(01:00)' | '(02:00)'"
+"""
+
 
 # Define the grammar
 _word = Word(pyparsing_unicode.alphanums + "_-")
@@ -104,9 +143,7 @@ def _convert_to_logical_expression(element: str | list, prop_format: str) -> str
 
 
 def generate_xpath(**kwargs):
-    """
-    Generate an XPath expression from the given keyword arguments.
-    """
+    """Generate an XPath expression from the given keyword arguments."""
     data = kwargs.copy()
     if "kwargs" in data:
         for key, value in data["kwargs"].items():
@@ -115,8 +152,11 @@ def generate_xpath(**kwargs):
 
     data.pop("self")
     data.pop("xpath")
+    axis_map = {"": "//", "attribute": "@", "self": "./", "parent": "../", "child": "/"}
 
-    header = data.pop("axis", "descendant") + "::" + data.pop("tag", "*")
+    axis = axis_map.get(data.pop("axis", ""), "") or data.pop("axis", "") + "::"
+
+    header = axis + data.pop("tag", "*")
     body = []
     for key, value in data.items():
         if value is None:

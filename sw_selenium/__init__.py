@@ -1,6 +1,4 @@
-"""
-__init__.py
-"""
+"""__init__.py"""
 
 from .builder import builder
 from .debugger import debugger

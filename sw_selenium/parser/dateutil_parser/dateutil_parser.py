@@ -1,5 +1,4 @@
-"""
-dateutil_parser.py
+"""dateutil_parser.py
 
 dateutil
 """
@@ -58,9 +57,7 @@ translation_table = _load_translation_table(csv_file_path.resolve())
 
 
 def convert_date_string(date_str: str, *, korean_year=False):
-    """
-    한국어나 영어로 된 날짜 문자열을 파싱하는 함수
-    """
+    """한국어나 영어로 된 날짜 문자열을 파싱하는 함수"""
     date_str = _rearrange_time(date_str)
     translated_date = _translate_korean_to_english(date_str, translation_table)
     return parser.parse(translated_date, yearfirst=korean_year)

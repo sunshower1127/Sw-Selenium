@@ -1,6 +1,4 @@
-"""
-__init__.py
-"""
+"""__init__.py"""
 
 from .captcha_parser import decipher_captcha
 from .dateutil_parser.dateutil_parser import convert_date_string
