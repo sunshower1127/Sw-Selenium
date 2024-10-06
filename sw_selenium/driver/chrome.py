@@ -42,7 +42,7 @@ else:
 
 # 이게 대체 뭔지 모르겠음
 # Warning이 뜨니깐...
-urllib3.PoolManager(num_pools=10, maxsize=10, block=True)
+urllib3.disable_warnings()
 
 SwOption = Literal[
     "keep_browser_open",
@@ -118,7 +118,7 @@ class SwChrome(Chrome):
             else:
                 options.add_argument(option_map.get(option) or option)
 
-        if keep_browser_open or self.debug:
+        if keep_browser_open:
             options.add_experimental_option("detach", value=True)
 
         for key, value in kwargs.items():

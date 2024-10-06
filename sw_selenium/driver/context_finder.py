@@ -92,10 +92,12 @@ class ContextFinder:
                 indices[self.current_window_index :]
                 + indices[: self.current_window_index]
             )
+            print(f"{indices=}")
 
             for window_index in indices:
                 self.driver.goto_window(window_index)
-                frame_list: list[str] = [""]
+                self.driver.goto_frame("/")
+                frame_list: list[str] = [""]  # "/".join 해야해서 빈 문자열 추가
                 self._depth_first_search(window_index, frame_list)
 
     def _depth_first_search(self, window_index, frame_list):
@@ -106,27 +108,34 @@ class ContextFinder:
             window_index (int): The index of the current window.
             frame_list (list[str]): The list of frames to search within.
         """
-        print(f"{window_index=}, {frame_list=}")
+        print(f"window_index: {window_index}, frame_path: { "/".join(frame_list) }")
         # find element
         try:
             self.driver.find(self.xpath)
             self.contexts.append((window_index, "/".join(frame_list)))
         except NoSuchElementException:
-            print("\t Not found")
+            print("\t-> The element not found")
 
         # find iframe
         try:
-            frame_ids = self.driver.find_all(tag="iframe").get_attribute("id")
-            for frame_id in frame_ids:
-                if frame_id is None:
-                    continue
-                self.driver.goto_frame(frame_id)
-                frame_list.append(frame_id)
-                self._depth_first_search(window_index, frame_list)
-                self.driver.goto_frame("..")
-                frame_list.pop()
+            frames = self.driver.find_all(tag="iframe")
+            frame_headers = []
+
+            for idx, frame in enumerate(frames):
+                frame_header = (
+                    frame.get_attribute("name") or frame.get_attribute("id") or str(idx)
+                )
+                frame_headers.append(frame_header)
         except NoSuchElementException:
-            print("\t No frame")
+            print("\t-> No child frame")
+            return
+
+        for frame_header in frame_headers:
+            self.driver.goto_frame(frame_header)
+            frame_list.append(frame_header)
+            self._depth_first_search(window_index, frame_list)
+            self.driver.goto_frame("..")
+            frame_list.pop()
 
     def _format_contexts(self):
         """Internal method to generate a string representation of the found contexts.

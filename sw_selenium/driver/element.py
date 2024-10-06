@@ -23,16 +23,16 @@ class SwElement(WebElement):
 
     def __init__(self, element: WebElement, xpath: str):
         super().__init__(element.parent, element.id)
-        self._driver: SwChrome = super().parent
+        self.driver: SwChrome = super().parent
         self.xpath = xpath
 
     @property
     def up(self):
-        return self.find(axis="parent")
+        return self.find("..")
 
     @property
     def down(self):
-        return self.find_all_or_none(axis="child")
+        return self.find_all_or_none("./*")
 
     @property
     def left(self):
@@ -57,13 +57,11 @@ class SwElement(WebElement):
             case "enter":
                 func = lambda: self.send_keys(Keys.ENTER)
             case "js":
-                func = lambda: self._driver.execute_script(
-                    "arguments[0].click();", self
-                )
+                func = lambda: self.driver.execute_script("arguments[0].click();", self)
             case "mouse":
                 func = lambda: ActionChains(self._parent).click(self).perform()
 
-        self._driver.retry(func)
+        self.driver.retry(func)
 
     def select(
         self,
@@ -124,16 +122,16 @@ class SwElement(WebElement):
 
         xpath = xpath or generate_xpath(**locals())
         full_xpath = f"{self.xpath}/{xpath}"
-        if self._driver.debug:
+        if self.driver.debug:
             print(f"LOG: find: {xpath=}")
         try:
             return SwElement(
-                self._driver.retry(lambda: self.find_element(By.XPATH, xpath)),
+                self.driver.retry(lambda: self.find_element(By.XPATH, xpath)),
                 full_xpath,
             )
         except NoSuchElementException:
-            if self._driver.debug:
-                self._driver.context_finder.search(full_xpath)
+            if self.driver.debug:
+                self.driver.context_finder.search(full_xpath)
                 return SwElement(self.find_element(By.XPATH, full_xpath), full_xpath)
             else:
                 msg = f"\n**Element not found**\n{full_xpath=}\n"

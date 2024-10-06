@@ -24,7 +24,6 @@ from pyparsing import (
 AxisStr = Literal[
     "ancestor",
     "ancestor-or-self",
-    "attribute",
     "child",
     "descendant",
     "descendant-or-self",
@@ -150,12 +149,15 @@ def generate_xpath(**kwargs):
             data[key] = value
         del data["kwargs"]
 
-    data.pop("self")
-    data.pop("xpath")
-    axis_map = {"": "//", "attribute": "@", "self": "./", "parent": "../", "child": "/"}
+    data.pop("self", "")
+    data.pop("xpath", "")
+    data.pop("delay", "")
+    # axis_map = {"": "//", "child": "/"}
 
-    axis = axis_map.get(data.pop("axis", ""), "") or data.pop("axis", "") + "::"
-
+    # axis = axis_map.get(data.pop("axis", ""), "") or data.pop("axis", "") + "::"
+    axis = data.pop("axis", "//")
+    if axis != "//":
+        axis += "::"
     header = axis + data.pop("tag", "*")
     body = []
     for key, value in data.items():
