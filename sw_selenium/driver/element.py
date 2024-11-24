@@ -1,5 +1,3 @@
-"""element"""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
@@ -11,10 +9,13 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.select import Select
 
-from sw_selenium.driver.elements import SwElements
-from sw_selenium.parser.xpath_parser import AxisStr, ExprStr, generate_xpath
+from sw_selenium.parsing import generate_xpath
+
+from .elements import SwElements
 
 if TYPE_CHECKING:
+    from sw_selenium.parsing.xpath_parser import AxisStr, ExprStr
+
     from .chrome import SwChrome
 
 
@@ -53,13 +54,12 @@ class SwElement(WebElement):
         에러가 안나는 방향의 클릭들을 지원함.
         경험적으로 send_keys(Keys.ENTER)가 가장 안전함.
         """
-        match by:
-            case "enter":
-                func = lambda: self.send_keys(Keys.ENTER)
-            case "js":
-                func = lambda: self.driver.execute_script("arguments[0].click();", self)
-            case "mouse":
-                func = lambda: ActionChains(self._parent).click(self).perform()
+        if by == "enter":
+            func = lambda: self.send_keys(Keys.ENTER)
+        elif by == "js":
+            func = lambda: self.driver.execute_script("arguments[0].click();", self)
+        elif by == "mouse":
+            func = lambda: ActionChains(self._parent).click(self).perform()
 
         self.driver.retry(func)
 
@@ -69,13 +69,12 @@ class SwElement(WebElement):
         value: str | int = 0,
     ):
         select = Select(self)
-        match by:
-            case "index":
-                select.select_by_index(int(value))
-            case "value":
-                select.select_by_value(str(value))
-            case "text":
-                select.select_by_visible_text(str(value))
+        if by == "index":
+            select.select_by_index(int(value))
+        elif by == "value":
+            select.select_by_value(str(value))
+        elif by == "text":
+            select.select_by_visible_text(str(value))
 
     def find(  # noqa: D417
         self,

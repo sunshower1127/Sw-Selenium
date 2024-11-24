@@ -1,21 +1,16 @@
-"""ui_manager
-tkinter
-
-"""
-
 from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Literal, TypeVar
 
-from lazy_import import lazy_module
+from sw_selenium.utils.lazy_import import LazyImport
 
 if TYPE_CHECKING:
     import tkinter as tk
     from tkinter import simpledialog
 else:
-    tk = lazy_module("tkinter")
-    simpledialog = lazy_module("tkinter.simpledialog")
+    tk = LazyImport("tkinter", pip_name="tk")
+    simpledialog = LazyImport("tkinter.simpledialog")
 
 T = TypeVar("T", str, int, float)
 

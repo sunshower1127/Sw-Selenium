@@ -1,19 +1,14 @@
-"""dateutil_parser.py
-
-dateutil
-"""
-
 import csv
 import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from lazy_import import lazy_module
+from sw_selenium.utils.lazy_import import LazyImport
 
 if TYPE_CHECKING:
-    from dateutil import parser
+    from dateutil import parser  # type: ignore[import]
 else:
-    parser = lazy_module("dateutil.parser")
+    parser = LazyImport("dateutil", "parser", "python-dateutil")
 
 
 # CSV 파일을 읽어와서 번역 테이블을 딕셔너리로 변환

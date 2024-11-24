@@ -1,24 +1,17 @@
-"""catpcha_parser.py
-
-cv2
-numpy
-pytesseract -> 추가 설치 필요
-"""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from lazy_import import lazy_function, lazy_module
+from sw_selenium.utils.lazy_import import LazyImport
 
 if TYPE_CHECKING:
-    import cv2 as cv
-    import numpy as np
-    from pytesseract import image_to_string
+    import cv2 as cv  # type: ignore[import]
+    import numpy as np  # type: ignore[import]
+    from pytesseract import image_to_string  # type: ignore[import]
 else:
-    cv = lazy_module("cv2", {"import_name": "opencv-python"})
-    np = lazy_module("numpy")
-    image_to_string = lazy_function("pytesseract.image_to_string")
+    cv = LazyImport("cv2", "opencv-python")
+    np = LazyImport("numpy")
+    image_to_string = LazyImport("pytesseract", "image_to_string")
 
 
 def decipher_captcha(captcha_img: bytes) -> str:

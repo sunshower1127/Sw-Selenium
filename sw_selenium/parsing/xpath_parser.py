@@ -1,8 +1,3 @@
-"""xpath_parser
-
-pyparsing
-"""
-
 from __future__ import annotations
 
 from typing import Literal
@@ -34,8 +29,7 @@ AxisStr = Literal[
     "preceding-sibling",
     "self",
 ]
-"""
-AxisStr type description
+"""AxisStr type description
 
 Represents the direction in which to search for elements relative to the current node.
 
@@ -44,8 +38,7 @@ https://www.w3schools.com/xml/xpath_axes.asp
 """
 
 ExprStr = str
-"""
-ExprStr type description
+"""ExprStr type description
 
 Represents a string expression that supports logical operators for element selection.
 
@@ -59,7 +52,7 @@ Supported operators:
 
 
 # Define the grammar
-_word = Word(pyparsing_unicode.alphanums + "_-")
+_word = Word(pyparsing_unicode.alphanums + "_-.")
 _identifier = (
     Combine(OneOrMore(_word + ZeroOrMore(White() + _word)))
     | QuotedString('"')
@@ -79,6 +72,8 @@ def _get_prop_format(prop_name: str):
     prop_name = prop_name.replace("class_name", "class")
     if "text" in prop_name:
         prop_name = prop_name.replace("text", "text()")
+    elif "num" in prop_name:
+        prop_name = prop_name.replace("num", "position()")
     else:
         prop_name = "@" + prop_name
 
@@ -141,7 +136,7 @@ def _convert_to_logical_expression(element: str | list, prop_format: str) -> str
     return prop_format.format(element)
 
 
-def generate_xpath(**kwargs):
+def generate_xpath(**kwargs) -> str:
     """Generate an XPath expression from the given keyword arguments."""
     data = kwargs.copy()
     if "kwargs" in data:
@@ -163,7 +158,7 @@ def generate_xpath(**kwargs):
     for key, value in data.items():
         if value is None:
             continue
-        body.append(_parse_expression(value, key))
+        body.append(_parse_expression(str(value), key))
 
     if body:
         return f"{header}[{ ' and '.join(body) }]"

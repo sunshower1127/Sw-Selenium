@@ -1,6 +1,4 @@
-"""
-setup.py for pip
-"""
+"""setup.py for pip"""
 
 from setuptools import find_packages, setup
 

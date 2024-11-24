@@ -108,7 +108,7 @@ class ContextFinder:
             window_index (int): The index of the current window.
             frame_list (list[str]): The list of frames to search within.
         """
-        print(f"window_index: {window_index}, frame_path: { "/".join(frame_list) }")
+        print(f"window_index: {window_index}, frame_path: { '/'.join(frame_list) }")
         # find element
         try:
             self.driver.find(self.xpath)
